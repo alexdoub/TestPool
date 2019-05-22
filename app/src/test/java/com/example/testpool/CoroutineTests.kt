@@ -1,6 +1,8 @@
 package com.example.testpool
 
+import android.os.Build.VERSION_CODES.P
 import android.util.Range
+import io.reactivex.Observable
 import kotlinx.coroutines.*
 import kotlinx.coroutines.rx2.asCompletable
 import kotlinx.coroutines.rx2.rxObservable
@@ -10,6 +12,7 @@ import org.junit.Test
 import org.junit.Assert.*
 import org.junit.Before
 import java.lang.Exception
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -93,7 +96,32 @@ class CoroutineTests {
         }
     }
 
-    fun derp() {
+    @Test
+    fun rxObservable() {
+
+        val list = (0..100).map { it.toString() }.toList()
+
+        runBlocking {
+            val observable2 = rxObservable<String> {
+                println("in here")
+                list.forEach {
+                    println("sent ${it}")
+                    send(it)
+                }
+            }
+
+            val observable = Observable.fromIterable(list)
+
+            observable.subscribe { println("got ${it}") }
+
+            observable
+                .test()
+                .awaitDone(5, TimeUnit.SECONDS)
+                .assertValueSequence(list)
+        }
+    }
+
+    fun CHEAT_SHEET() {
 
 
         val sing = GlobalScope.rxSingle { }
@@ -119,7 +147,6 @@ class CoroutineTests {
 
 
     }
-
 
     //does cancelling parent context also cancel child?
 //    @Test
@@ -169,7 +196,6 @@ class CoroutineTests {
             println("wut: ${t.message}")
         }
     }
-
 
     //    @Test
     fun fizzBuzz() {
