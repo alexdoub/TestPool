@@ -24,8 +24,8 @@ suspend fun <A, B> Collection<A>.parallelMap(
     context: CoroutineContext = GlobalScope.coroutineContext,
     block: suspend (A) -> B
 ) = map {
-    GlobalScope.async(context) { block(it) }
-}.map { it.await() }
+    GlobalScope.async(context) { block(it) }.await()
+}
 
 suspend fun <A, B> Collection<A>.parallelForEach(
     context: CoroutineContext = GlobalScope.coroutineContext,
@@ -39,23 +39,18 @@ suspend fun <A, B> Collection<A>.parallelForEach(
     block: suspend (A) -> B,
     maxConcurrency: Int
 ) {
-    GlobalScope.async(context) {
-        val jobs = ArrayList<Job>()
-        forEach {
-            println("before job ${it}. it has ${jobs.size}")
-            while (jobs.size >= maxConcurrency) {
+    val jobs = ArrayList<Job>()
+    forEach {
+        println("before job ${it}. it has ${jobs.size}")
+        while (jobs.size >= maxConcurrency) {
 //                println("yielding at ${System.currentTimeMillis()}")
-                yield()
-            }
-            println("starting job ${it}. it has ${jobs.size}")
-            val job = GlobalScope.async(context) { block(it) }
-            job.invokeOnCompletion {
-                jobs.remove(job)
-            }
-            jobs.add(job)
-            println("added job ${it}. it has ${jobs.size}")
+            yield()
         }
-        println("Joining jobs")
-        jobs.toMutableList().joinAll()
+        println("starting job ${it}. it has ${jobs.size}")
+        val job = GlobalScope.async(context) { block(it) }
+        job.invokeOnCompletion { jobs.remove(job) }
+        jobs.add(job)
+        println("added job ${it}. it has ${jobs.size}")
     }
+
 }

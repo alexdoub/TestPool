@@ -42,29 +42,44 @@ class RxTests {
     }
 
     @Test
-    fun concurrentProcesses_work() {
-        concurrentProcess { CoroutineTests.workProcess(it) }
+    fun limited_concurrentProcesses_work() {
+        concurrentProcess(function = { CoroutineTests.workProcess(it) })
     }
 
     @Test
-    fun concurrentProcesses_sleep() {
-        concurrentProcess { CoroutineTests.sleepProcess(it) }
+    fun limited_concurrentProcesses_sleep() {
+        concurrentProcess(function = { CoroutineTests.sleepProcess(it) })
     }
 
     @Test
-    fun concurrentProcesses_delay() {
-        concurrentProcess { CoroutineTests.delayProcess(it) }
+    fun limited_concurrentProcesses_delay() {
+        concurrentProcess(function = { CoroutineTests.delayProcess(it) })
+    }
+
+    @Test
+    fun default_concurrentProcesses_work() {
+        concurrentProcess(function = { CoroutineTests.workProcess(it) }, limit = 999)
+    }
+
+    @Test
+    fun default_concurrentProcesses_sleep() {
+        concurrentProcess(function = { CoroutineTests.sleepProcess(it) }, limit = 999)
+    }
+
+    @Test
+    fun default_concurrentProcesses_delay() {
+        concurrentProcess(function = { CoroutineTests.delayProcess(it) }, limit = 999)
     }
 
     //NOTES: If the inner shit needs to be in a new thread, put the subscribeOn() there. It rotates every time its called
-    private fun concurrentProcess(function: suspend (Int) -> (Int)) {
+    private fun concurrentProcess(function: suspend (Int) -> (Int), limit: Int = CONCURRENCY) {
         val list: List<Int> = (0..COUNT).toList()
         val test = Observable.fromIterable(list)
             .flatMap ({id ->
                 return@flatMap GlobalScope.rxSingle { function(id) }
                     .toObservable()
                     .subscribeOn(Schedulers.newThread())
-            }, CONCURRENCY)
+            }, limit)
             .test()
 
         test.awaitDone(5, TimeUnit.MINUTES)

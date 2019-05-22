@@ -32,15 +32,15 @@ class CoroutineTests {
 
     @Test
     fun singleThread() {
-        runBlocking {
+        runBlocking(GlobalScope.coroutineContext) {
             (0..COUNT).toList().forEach {
-                val a = workProcess(it)
+                workProcess(it)
             }
         }
     }
 
     @Test
-    fun concurrentProcesses_work() {
+    fun defaultConcurrentProcesses_work() {
         runBlocking {
             (0..COUNT).toList().parallelForEach {
                 workProcess(it)
@@ -49,7 +49,7 @@ class CoroutineTests {
     }
 
     @Test
-    fun concurrentProcesses_sleep() {
+    fun defaultConcurrentProcesses_sleep() {
         runBlocking {
             (0..COUNT).toList().parallelForEach {
                 sleepProcess(it)
@@ -58,7 +58,7 @@ class CoroutineTests {
     }
 
     @Test
-    fun concurrentProcesses_delay() {
+    fun defaultConcurrentProcesses_delay() {
         runBlocking {
             (0..COUNT).toList().parallelForEach {
                 delayProcess(it)
@@ -67,50 +67,50 @@ class CoroutineTests {
     }
 
     @Test
-    fun parallelConcurrentProcesses_work() {
+    fun limitedConcurrentProcesses_work() {
         runBlocking {
-            (0..COUNT).toList().parallelForEach(this.coroutineContext, {
+            (0..COUNT).toList().parallelForEach(block = {
                 workProcess(it)
-            }, CONCURRENCY)
+            }, maxConcurrency = CONCURRENCY)
         }
     }
 
     @Test
-    fun parallelConcurrentProcesses_sleep() {
+    fun limitedConcurrentProcesses_sleep() {
         runBlocking {
-            (0..COUNT).toList().parallelForEach(this.coroutineContext, {
+            (0..COUNT).toList().parallelForEach(block = {
                 sleepProcess(it)
-            }, CONCURRENCY)
+            }, maxConcurrency = CONCURRENCY)
         }
     }
 
     @Test
-    fun parallelConcurrentProcesses_delay() {
+    fun limitedConcurrentProcesses_delay() {
         runBlocking {
-            (0..COUNT).toList().parallelForEach(this.coroutineContext, {
+            (0..COUNT).toList().parallelForEach(block = {
                 delayProcess(it)
-            }, CONCURRENCY)
+            }, maxConcurrency = CONCURRENCY)
         }
     }
 
     fun derp() {
 
 
-        val sing = GlobalScope.rxSingle {  }
+        val sing = GlobalScope.rxSingle { }
         sing.blockingGet()
 
         if (GlobalScope.isActive) GlobalScope.cancel()
 
         runBlocking {
-            launch {  }
+            launch { }
 
             coroutineScope {
-                rxObservable<String> {   }
+                rxObservable<String> { }
 
-                val job = launch { rxSingle {  } }
+                val job = launch { rxSingle { } }
                 job.invokeOnCompletion {}
                 job.asCompletable(this.coroutineContext)
-                return@coroutineScope  null
+                return@coroutineScope null
             }
 
             val a = newCoroutineContext(this.coroutineContext)
@@ -122,61 +122,181 @@ class CoroutineTests {
 
 
     //does cancelling parent context also cancel child?
-    @Test
+//    @Test
     fun parent_cancel_child() {
 
         try {
 
-        runBlocking {
-            println("Before scope1")
+            runBlocking {
+                println("Before scope1")
 //            val scope1 = coroutineScope {
-                async{
+                async {
                     var i = 0
-                    while(true) {
+                    while (true) {
                         delayProcess(i)
                         i++
 //                        yield()
                     }
                 }
 //            }
-            println("Past scope1")
-//            cancel(CancellationException("waddup"))
+                println("Past scope1")
+                cancel(CancellationException("waddup"))
 
-            val context2 = newCoroutineContext(this.coroutineContext)
-            val scope2 = coroutineScope {
-                async(context2) {
-                    var i = 0
-                    while(true) {
-                        delayProcess(i)
-                        i++
+                val context2 = newCoroutineContext(this.coroutineContext)
+                val scope2 = coroutineScope {
+                    async(context2) {
+                        var i = 0
+                        while (true) {
+                            delayProcess(i)
+                            i++
 //                        yield()
+                        }
                     }
                 }
-            }
 
 
-            println("Past scope2")
-            delay(1000)
+                println("Past scope2")
+                delay(1000)
 //            context2.cancel(CancellationException("Cheeze"))
-            scope2.cancel(CancellationException("Whiz"))
-            delay(1000)
-            println("Proper finish!")
+                scope2.cancel(CancellationException("Whiz"))
+                delay(1000)
+                println("Proper finish!")
 //            scope1.cancel()
-            true
-        }
+                true
+            }
 
         } catch (t: Throwable) {
             println("wut: ${t.message}")
         }
     }
 
+
+    //    @Test
+    fun fizzBuzz() {
+        val calcuated = (1..100).map { number ->
+            when {
+                number % 15 == 0 -> "FizzBuzz"
+                number % 5 == 0 -> "Buzz"
+                number % 3 == 0 -> "Fizz"
+                else -> number
+            }
+        }
+            .toList()
+
+        val answers = listOf(
+            "1",
+            "2",
+            "Fizz",
+            "4",
+            "Buzz",
+            "Fizz",
+            "7",
+            "8",
+            "Fizz",
+            "Buzz",
+            "11",
+            "Fizz",
+            "13",
+            "14",
+            "FizzBuzz",
+            "16",
+            "17",
+            "Fizz",
+            "19",
+            "Buzz",
+            "Fizz",
+            "22",
+            "23",
+            "Fizz",
+            "Buzz",
+            "26",
+            "Fizz",
+            "28",
+            "29",
+            "FizzBuzz",
+            "31",
+            "32",
+            "Fizz",
+            "34",
+            "Buzz",
+            "Fizz",
+            "37",
+            "38",
+            "Fizz",
+            "Buzz",
+            "41",
+            "Fizz",
+            "43",
+            "44",
+            "FizzBuzz",
+            "46",
+            "47",
+            "Fizz",
+            "49",
+            "Buzz",
+            "Fizz",
+            "52",
+            "53",
+            "Fizz",
+            "Buzz",
+            "56",
+            "Fizz",
+            "58",
+            "59",
+            "FizzBuzz",
+            "61",
+            "62",
+            "Fizz",
+            "64",
+            "Buzz",
+            "Fizz",
+            "67",
+            "68",
+            "Fizz",
+            "Buzz",
+            "71",
+            "Fizz",
+            "73",
+            "74",
+            "FizzBuzz",
+            "76",
+            "77",
+            "Fizz",
+            "79",
+            "Buzz",
+            "Fizz",
+            "82",
+            "83",
+            "Fizz",
+            "Buzz",
+            "86",
+            "Fizz",
+            "88",
+            "89",
+            "FizzBuzz",
+            "91",
+            "92",
+            "Fizz",
+            "94",
+            "Buzz",
+            "Fizz",
+            "97",
+            "98",
+            "Fizz",
+            "Buzz"
+        )
+        for (index in 0 until answers.size) {
+            assert(calcuated[index] == calcuated[index])
+        }
+    }
+
     companion object {
-        val COUNT = 20
-        val CONCURRENCY = COUNT
+        val COUNT = 30
+        val CONCURRENCY = 4
         val WAIT_TIME_MS = 1000L
 
         public suspend fun workProcess(int: Int): Int {
-            println("${int} Going to work at ${System.currentTimeMillis()} with thread ${Thread.currentThread().id}")
+            println("${int} Going to work at ${System.currentTimeMillis()} with thread ${Thread.currentThread().name}")
             val stopTime = System.currentTimeMillis() + WAIT_TIME_MS
             while (System.currentTimeMillis() < stopTime) {
                 var i: Long = 0;
@@ -188,14 +308,14 @@ class CoroutineTests {
         }
 
         public suspend fun sleepProcess(int: Int): Int {
-            println("${int} Going to sleep at ${System.currentTimeMillis()} with thread ${Thread.currentThread().id}")
+            println("${int} Going to sleep at ${System.currentTimeMillis()} with thread ${Thread.currentThread().name}")
             Thread.sleep(WAIT_TIME_MS)
-            println("${int} Done sleeping at ${System.currentTimeMillis()} with thread ${Thread.currentThread().id}")
+            println("${int} Done sleeping at ${System.currentTimeMillis()} with thread ${Thread.currentThread().name}")
             return int
         }
 
         public suspend fun delayProcess(int: Int): Int {
-            println("${int} Delay at ${System.currentTimeMillis()} with thread ${Thread.currentThread().id}")
+            println("${int} Delay at ${System.currentTimeMillis()} with thread ${Thread.currentThread().name}")
             delay(WAIT_TIME_MS)
             return int
         }
