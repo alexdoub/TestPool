@@ -1,8 +1,8 @@
 package com.example.testpool
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.produce
 import kotlin.coroutines.CoroutineContext
-import kotlinx.coroutines.GlobalScope
 
 /*
  * Copyright 2018 Google, Inc.
@@ -21,11 +21,34 @@ import kotlinx.coroutines.GlobalScope
  */
 
 suspend fun <A, B> Collection<A>.parallelMap(
-    context: CoroutineContext = GlobalScope.coroutineContext,
+    scope: CoroutineScope = GlobalScope,
     block: suspend (A) -> B
 ) = map {
-    GlobalScope.async(context) { block(it) }.await()
+    withContext(scope.coroutineContext) { block(it) }
 }
+
+suspend fun <A, B> Collection<A>.parallelMap(
+    scope: CoroutineScope = GlobalScope,
+    block: suspend (A) -> B,
+    maxConcurrency: Int
+) = scope.produce<B> {
+
+    val jobs = ArrayList<Job>()
+    forEach {
+        while (jobs.size >= maxConcurrency) {
+            yield()
+        }
+
+        val job = async{
+            val rval = block(it)
+//            println(" (sending ${it})")
+            send(rval)
+        }
+        job.invokeOnCompletion { jobs.remove(job) }
+        jobs.add(job)
+    }
+}
+
 
 suspend fun <A, B> Collection<A>.parallelForEach(
     context: CoroutineContext = GlobalScope.coroutineContext,
@@ -52,5 +75,4 @@ suspend fun <A, B> Collection<A>.parallelForEach(
         jobs.add(job)
         println("added job ${it}. it has ${jobs.size}")
     }
-
 }

@@ -1,9 +1,7 @@
 package com.example.testpool
 
-import android.os.Build.VERSION_CODES.P
-import android.util.Range
-import io.reactivex.Observable
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.rx2.asCompletable
 import kotlinx.coroutines.rx2.rxObservable
 import kotlinx.coroutines.rx2.rxSingle
@@ -11,8 +9,6 @@ import org.junit.Test
 
 import org.junit.Assert.*
 import org.junit.Before
-import java.lang.Exception
-import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -98,26 +94,62 @@ class CoroutineTests {
 
     @Test
     fun rxObservable() {
-
-        val list = (0..100).map { it.toString() }.toList()
-
         runBlocking {
-            val observable2 = rxObservable<String> {
+            val observable = rxObservable {
                 println("in here")
-                list.forEach {
-                    println("sent ${it}")
+                (0..100).forEach {
                     send(it)
                 }
             }
-
-            val observable = Observable.fromIterable(list)
-
             observable.subscribe { println("got ${it}") }
+        }
+    }
 
-            observable
-                .test()
-                .awaitDone(5, TimeUnit.SECONDS)
-                .assertValueSequence(list)
+    val ITEM_COUNT = 5000
+    val BATCH_SIZE = 250
+    val verbose = true
+    @Test
+    fun mockMetadataSync() {
+        val asyncTask = GlobalScope.async {
+            println("w8")
+            delay(1500)
+            println("hi")
+        }
+
+        val ids = (0..ITEM_COUNT).map { "ID:${it}" }.chunked(BATCH_SIZE)
+        val successfulBatches = ArrayList<BatchResult>()
+        runBlocking {
+
+            asyncTask.await()
+
+            //Immediately executes after this line
+            val syncBatchProducer = ids.parallelMap(scope = this, block = {
+                fetchAndSyncBatch(it)
+            }, maxConcurrency = CONCURRENCY)
+
+//            async(newCoroutineContext(this.coroutineContext)) {
+                syncBatchProducer.consumeEach {
+                    successfulBatches.add(it)
+//                }
+            }
+
+            loggy("end of blocking. ids: ${ids.size} batch results: ${successfulBatches.size}")
+        }
+        assertEquals(ids.size, successfulBatches.size)
+    }
+
+    private suspend fun fetchAndSyncBatch(list:List<String>): BatchResult {
+        loggy("Fetching batch ${list.firstOrNull()} to ${list.lastOrNull()}", list.firstOrNull()?.equals("ID:0") == true)
+        delay(500)
+        loggy("Done Fetching batch ${list.firstOrNull()} to ${list.lastOrNull()}", list.firstOrNull()?.contains("ID:0") == true)
+        return BatchResult(list)
+    }
+
+    private class BatchResult(val syncedIds: List<String>)
+
+    private fun loggy(string: String, condition1: Boolean = true) {
+        if (verbose && condition1) {
+            println(string)
         }
     }
 
@@ -131,6 +163,15 @@ class CoroutineTests {
 
         runBlocking {
             launch { }
+
+            val prod = produce {
+                send("string")
+            }
+            val act = actor<String> {
+                receive()
+            }
+
+            prod.consume {  }
 
             coroutineScope {
                 rxObservable<String> { }
