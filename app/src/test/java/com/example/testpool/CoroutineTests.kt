@@ -31,7 +31,7 @@ class CoroutineTests {
 
     @Test
     fun singleThread() {
-        runBlocking(GlobalScope.coroutineContext) {
+        runBlocking {
             (0..COUNT).toList().forEach {
                 workProcess(it)
             }
@@ -123,32 +123,30 @@ class CoroutineTests {
             asyncTask.await()
 
             //Immediately executes after this line
-            val syncBatchProducer = ids.parallelMap(scope = this, block = {
+            ids.parallelMap(scope = this, block = {
                 fetchAndSyncBatch(it)
             }, maxConcurrency = CONCURRENCY)
-
-//            async(newCoroutineContext(this.coroutineContext)) {
-                syncBatchProducer.consumeEach {
+                .consumeEach {
                     successfulBatches.add(it)
-//                }
-            }
+                }
 
             loggy("end of blocking. ids: ${ids.size} batch results: ${successfulBatches.size}")
         }
+        loggy("before assert. ids: ${ids.size} batch results: ${successfulBatches.size}")
         assertEquals(ids.size, successfulBatches.size)
     }
 
     private suspend fun fetchAndSyncBatch(list:List<String>): BatchResult {
-        loggy("Fetching batch ${list.firstOrNull()} to ${list.lastOrNull()}", list.firstOrNull()?.equals("ID:0") == true)
+        loggy("Fetching batch ${list.firstOrNull()} to ${list.lastOrNull()}")
         delay(500)
-        loggy("Done Fetching batch ${list.firstOrNull()} to ${list.lastOrNull()}", list.firstOrNull()?.contains("ID:0") == true)
+        loggy("Done Fetching batch ${list.firstOrNull()} to ${list.lastOrNull()}")
         return BatchResult(list)
     }
 
     private class BatchResult(val syncedIds: List<String>)
 
-    private fun loggy(string: String, condition1: Boolean = true) {
-        if (verbose && condition1) {
+    private fun loggy(string: String) {
+        if (verbose) {
             println(string)
         }
     }

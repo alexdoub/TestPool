@@ -7,11 +7,11 @@ import org.junit.Test
 import java.math.BigInteger
 
 
-class ComparisonTest {
+class ParallelComputationTests {
 
     val iterations = 0..50000
     val digitLength = 2000
-    val maxConcurrency = 8
+    val concurrency = 8
 
     @Test
     fun test1_single() {
@@ -21,22 +21,22 @@ class ComparisonTest {
     }
 
     @Test
-    fun test1_rx_computation() {
+    fun test1_rx_computation_limited() {
         Observable.fromIterable(iterations)
             .flatMap({
                 Observable.fromCallable { return@fromCallable calculateHugeNumber(it) }
                     .subscribeOn(Schedulers.computation())
-            }, maxConcurrency)
+            }, concurrency)
             .test().await()
     }
 
     @Test
-    fun test1_rx_newthread() {
+    fun test1_rx_newthread_limited() {
         Observable.fromIterable(iterations)
             .flatMap({
                 Observable.fromCallable { return@fromCallable calculateHugeNumber(it) }
                     .subscribeOn(Schedulers.newThread())
-            }, maxConcurrency)
+            }, concurrency)
             .test().await()
     }
 
@@ -61,7 +61,7 @@ class ComparisonTest {
     }
 
     @Test
-    fun test1_coru_async_unlimited() {
+    fun test1_coru_async_limited() {
         runBlocking {
             (iterations).forEach {
                 async {
@@ -72,9 +72,31 @@ class ComparisonTest {
     }
 
     @Test
-    fun test1_coru_launch_unlimited() {
+    fun test1_coru_launch_limited() {
         runBlocking {
             (iterations).forEach {
+                launch {
+                    calculateHugeNumber(it)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun test1_coru_async_unlimited() {
+        runBlocking {
+            (iterations).toList().parallelForEach {
+                async {
+                    calculateHugeNumber(it)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun test1_coru_launch_unlimited() {
+        runBlocking {
+            (iterations).toList().parallelForEach {
                 launch {
                     calculateHugeNumber(it)
                 }
