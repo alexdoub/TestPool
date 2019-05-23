@@ -9,8 +9,8 @@ import java.math.BigInteger
 
 class ComparisonTest {
 
-    val iterations = 0..10000
-    val digitLength = 5000
+    val iterations = 0..50000
+    val digitLength = 2000
     val maxConcurrency = 8
 
     @Test
