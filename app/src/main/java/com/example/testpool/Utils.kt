@@ -28,7 +28,10 @@ suspend fun <A, B> Collection<A>.parallelMap(
             yield()
         }
 
-        val job = scope.async {
+        //Do NOT change scope here.
+        //This async needs to be in ProducerScope (this)
+        //Or else the parent scope wont know those jobs are running. (And resumes before they finished)
+        val job = async(Dispatchers.Default) {
             send(block(it))
         }
         job.invokeOnCompletion { jobs.remove(job) }

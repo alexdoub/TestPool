@@ -1,16 +1,12 @@
 package com.example.testpool
 
 import io.reactivex.Observable
-import io.reactivex.Single
-import io.reactivex.observers.TestObserver
 import io.reactivex.schedulers.Schedulers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.rx2.asSingle
 import kotlinx.coroutines.rx2.rxSingle
 import org.junit.Test
 
-import org.junit.Assert.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -36,14 +32,14 @@ class RxTests {
         Observable.fromIterable((0..COUNT))
             .subscribe {
                 runBlocking {
-                    CoroutineTests.workProcess(it)
+                    CoroutineTests.timedWorkProcess(it)
                 }
             }
     }
 
     @Test
     fun limited_concurrentProcesses_work() {
-        concurrentProcess(function = { CoroutineTests.workProcess(it) })
+        concurrentProcess(function = { CoroutineTests.timedWorkProcess(it) })
     }
 
     @Test
@@ -58,7 +54,7 @@ class RxTests {
 
     @Test
     fun default_concurrentProcesses_work() {
-        concurrentProcess(function = { CoroutineTests.workProcess(it) }, limit = 999)
+        concurrentProcess(function = { CoroutineTests.timedWorkProcess(it) }, limit = 999)
     }
 
     @Test

@@ -9,7 +9,7 @@ import org.junit.Test
 
 import org.junit.Assert.*
 import org.junit.Before
-import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -33,7 +33,7 @@ class CoroutineTests {
     fun singleThread() {
         runBlocking {
             (0..COUNT).toList().forEach {
-                workProcess(it)
+                timedWorkProcess(it)
             }
         }
     }
@@ -42,7 +42,7 @@ class CoroutineTests {
     fun defaultConcurrentProcesses_work() {
         runBlocking {
             (0..COUNT).toList().parallelForEach {
-                workProcess(it)
+                timedWorkProcess(it)
             }
         }
     }
@@ -69,7 +69,7 @@ class CoroutineTests {
     fun limitedConcurrentProcesses_work() {
         runBlocking {
             (0..COUNT).toList().parallelForEach(block = {
-                workProcess(it)
+                timedWorkProcess(it)
             }, maxConcurrency = CONCURRENCY)
         }
     }
@@ -114,6 +114,10 @@ class CoroutineTests {
             println("w8")
             delay(1500)
             println("hi")
+
+            doThis()
+            doThatIn(this)
+            doNotDoThis()
         }
 
         val ids = (0..ITEM_COUNT).map { "ID:${it}" }.chunked(BATCH_SIZE)
@@ -121,6 +125,7 @@ class CoroutineTests {
         runBlocking {
 
             asyncTask.await()
+
 
             //Immediately executes after this line
             ids.parallelMap(scope = this, block = {
@@ -134,6 +139,40 @@ class CoroutineTests {
         }
         loggy("before assert. ids: ${ids.size} batch results: ${successfulBatches.size}")
         assertEquals(ids.size, successfulBatches.size)
+    }
+
+    @Test
+    fun scopeTest() {
+        val asyncTask = GlobalScope.async {
+            println("hi")
+//            doThis()
+//            doThatIn(this)
+            doNotDoThis()
+        }
+
+        runBlocking {
+            asyncTask.await()
+            println("asyncTask done")
+        }
+    }
+
+    //This is bad because its not explicitly saying its making a scope
+    suspend fun doNotDoThis() {
+        CoroutineScope(coroutineContext).launch {
+            delay(1000)
+            println("done?")
+        }
+    }
+    fun CoroutineScope.doThis() {
+        launch {
+            delay(400)
+            println("I'm fine") }
+    }
+
+    fun doThatIn(scope: CoroutineScope) {
+        scope.launch {
+            delay(600)
+            println("I'm fine, too") }
     }
 
     private suspend fun fetchAndSyncBatch(list:List<String>): BatchResult {
@@ -360,7 +399,7 @@ class CoroutineTests {
         val CONCURRENCY = 4
         val WAIT_TIME_MS = 1000L
 
-        public suspend fun workProcess(int: Int): Int {
+        public suspend fun timedWorkProcess(int: Int): Int {
             println("${int} Going to work at ${System.currentTimeMillis()} with thread ${Thread.currentThread().name}")
             val stopTime = System.currentTimeMillis() + WAIT_TIME_MS
             while (System.currentTimeMillis() < stopTime) {
