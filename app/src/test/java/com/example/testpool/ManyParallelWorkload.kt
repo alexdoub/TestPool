@@ -28,7 +28,7 @@ class ManyParallelWorkload {
     }
 
     //    @Test //Single thread
-    fun map_work() {
+    fun map() {
         runBlocking(Dispatchers.Default) {
             (0..COUNT).toList().concurrentMap {
                 lightWorkProcess(it)
@@ -39,7 +39,7 @@ class ManyParallelWorkload {
     }
 
     @Test
-    fun forEach_work() {
+    fun forEach() {
         runBlocking(Dispatchers.Default) {
             (0..COUNT).toList().parallelForEach {
                 lightWorkProcess(it)
@@ -50,7 +50,7 @@ class ManyParallelWorkload {
     }
 
     @Test
-    fun forEach_limited_work() {
+    fun forEach_limited() {
         runBlocking(Dispatchers.Default) {
             (0..COUNT).toList().parallelForEachLimited(block = { id: Int ->
                 lightWorkProcess(id)
@@ -74,7 +74,7 @@ class ManyParallelWorkload {
         }
 
         public fun lightWorkProcessRx(int: Int): Observable<Int> {
-            return GlobalScope.rxObservable { lightWorkProcess(int) }
+            return GlobalScope.rxObservable { send(lightWorkProcess(int)) }
         }
 
     }
