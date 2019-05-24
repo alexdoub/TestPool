@@ -41,7 +41,7 @@ class CoroutineTests {
     @Test
     fun defaultConcurrentProcesses_work() {
         runBlocking {
-            (0..COUNT).toList().parallelForEach {
+            (0..COUNT).toList().parallelMap {
                 timedWorkProcess(it)
             }
         }
@@ -50,7 +50,7 @@ class CoroutineTests {
     @Test
     fun defaultConcurrentProcesses_sleep() {
         runBlocking {
-            (0..COUNT).toList().parallelForEach {
+            (0..COUNT).toList().parallelMap {
                 sleepProcess(it)
             }
         }
@@ -59,7 +59,7 @@ class CoroutineTests {
     @Test
     fun defaultConcurrentProcesses_delay() {
         runBlocking {
-            (0..COUNT).toList().parallelForEach {
+            (0..COUNT).toList().parallelMap {
                 delayProcess(it)
             }
         }
@@ -68,7 +68,7 @@ class CoroutineTests {
     @Test
     fun limitedConcurrentProcesses_work() {
         runBlocking {
-            (0..COUNT).toList().parallelForEach(block = {
+            (0..COUNT).toList().parallelMapLimited(block = {
                 timedWorkProcess(it)
             }, maxConcurrency = CONCURRENCY)
         }
@@ -77,7 +77,7 @@ class CoroutineTests {
     @Test
     fun limitedConcurrentProcesses_sleep() {
         runBlocking {
-            (0..COUNT).toList().parallelForEach(block = {
+            (0..COUNT).toList().parallelMapLimited(block = {
                 sleepProcess(it)
             }, maxConcurrency = CONCURRENCY)
         }
@@ -86,13 +86,13 @@ class CoroutineTests {
     @Test
     fun limitedConcurrentProcesses_delay() {
         runBlocking {
-            (0..COUNT).toList().parallelForEach(block = {
+            (0..COUNT).toList().parallelMapLimited(block = {
                 delayProcess(it)
             }, maxConcurrency = CONCURRENCY)
         }
     }
 
-    @Test
+//    @Test
     fun rxObservable() {
         runBlocking {
             val observable = rxObservable {
@@ -108,7 +108,7 @@ class CoroutineTests {
     val ITEM_COUNT = 5000
     val BATCH_SIZE = 250
     val verbose = true
-    @Test
+//    @Test
     fun mockMetadataSync() {
         val asyncTask = GlobalScope.async {
             println("w8")
@@ -128,7 +128,7 @@ class CoroutineTests {
 
 
             //Immediately executes after this line
-            ids.parallelMap(scope = this, block = {
+            ids.parallelMapFromProduceLimited(scope = this, block = {
                 fetchAndSyncBatch(it)
             }, maxConcurrency = CONCURRENCY)
                 .consumeEach {
@@ -141,7 +141,22 @@ class CoroutineTests {
         assertEquals(ids.size, successfulBatches.size)
     }
 
-    @Test
+    private suspend fun fetchAndSyncBatch(list:List<String>): BatchResult {
+        loggy("Fetching batch ${list.firstOrNull()} to ${list.lastOrNull()}")
+        delay(500)
+        loggy("Done Fetching batch ${list.firstOrNull()} to ${list.lastOrNull()}")
+        return BatchResult(list)
+    }
+
+    private class BatchResult(val syncedIds: List<String>)
+
+    private fun loggy(string: String) {
+        if (verbose) {
+            println(string)
+        }
+    }
+
+//    @Test
     fun scopeTest() {
         val asyncTask = GlobalScope.async {
             println("hi")
@@ -173,21 +188,6 @@ class CoroutineTests {
         scope.launch {
             delay(600)
             println("I'm fine, too") }
-    }
-
-    private suspend fun fetchAndSyncBatch(list:List<String>): BatchResult {
-        loggy("Fetching batch ${list.firstOrNull()} to ${list.lastOrNull()}")
-        delay(500)
-        loggy("Done Fetching batch ${list.firstOrNull()} to ${list.lastOrNull()}")
-        return BatchResult(list)
-    }
-
-    private class BatchResult(val syncedIds: List<String>)
-
-    private fun loggy(string: String) {
-        if (verbose) {
-            println(string)
-        }
     }
 
     fun CHEAT_SHEET() {

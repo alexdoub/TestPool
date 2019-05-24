@@ -63,32 +63,26 @@ class ParallelComputationTests {
     @Test
     fun test1_coru_async_limited() {
         runBlocking {
-            (iterations).forEach {
-                async {
-                    calculateHugeNumber(it)
-                }
-            }
+            (iterations).toList().parallelMapLimited(this, {
+                calculateHugeNumber(it)
+            }, concurrency)
         }
     }
 
     @Test
     fun test1_coru_launch_limited() {
         runBlocking {
-            (iterations).forEach {
-                launch {
-                    calculateHugeNumber(it)
-                }
-            }
+            (iterations).toList().parallelMapLimited(this, {
+                calculateHugeNumber(it)
+            }, concurrency)
         }
     }
 
     @Test
     fun test1_coru_async_unlimited() {
         runBlocking {
-            (iterations).toList().parallelForEach {
-                async {
-                    calculateHugeNumber(it)
-                }
+            (iterations).toList().parallelMap {
+                calculateHugeNumber(it)
             }
         }
     }
@@ -96,10 +90,8 @@ class ParallelComputationTests {
     @Test
     fun test1_coru_launch_unlimited() {
         runBlocking {
-            (iterations).toList().parallelForEach {
-                launch {
-                    calculateHugeNumber(it)
-                }
+            (iterations).toList().parallelMap {
+                calculateHugeNumber(it)
             }
         }
     }
@@ -110,6 +102,7 @@ class ParallelComputationTests {
         while (number.toString().length < digitLength) {
             number = number.times(number).plus(BigInteger.ONE)
         }
+//        println("done with iteration: ${input}")
         return number
     }
 
