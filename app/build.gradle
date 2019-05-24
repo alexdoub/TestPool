@@ -14,6 +14,12 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
+
+    //Makes tests work
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -35,7 +41,7 @@ dependencies {
 
     //rxjava
     implementation "io.reactivex.rxjava2:rxandroid:$rootProject.rx_android_version"
-//    implementation "io.reactivex.rxjava2:rxjava:$rootProject.rx_java_version"
+    implementation "io.reactivex.rxjava2:rxjava:$rootProject.rx_java_version"
     implementation "io.reactivex.rxjava2:rxkotlin:$rootProject.rx_kotlin_version"
 
     // Kotlin

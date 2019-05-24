@@ -1,5 +1,6 @@
 package com.example.testpool
 
+import android.util.SparseArray
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.produce
 
@@ -9,14 +10,15 @@ import kotlinx.coroutines.channels.produce
  * If your worker is in the main group then its just going to share the same scheduler
  * */
 
-suspend fun <A, B> Collection<A>.parallelMap2(
+suspend fun <A, B> Collection<A>.concurrentMap(
     scope: CoroutineScope = GlobalScope,
     block: suspend (A) -> B
 ) = map {
     withContext(scope.coroutineContext) { block(it) }
 }
 
-suspend fun <A, B> Collection<A>.parallelMap(
+//working
+suspend fun <A, B> Collection<A>.parallelForEach(
     scope: CoroutineScope = GlobalScope,
     block: suspend (A) -> B
 ) = map {
@@ -24,13 +26,14 @@ suspend fun <A, B> Collection<A>.parallelMap(
 }.forEach { it.await() }
 
 
-suspend fun <A, B> Collection<A>.parallelMapLimited(
+//This is BROKEN for high collection sizes! after 10k+ iterations it stops
+suspend fun Collection<Int>.parallelForEachLimited(
     scope: CoroutineScope = GlobalScope,
-    block: suspend (A) -> B,
+    block: suspend (Int) -> Any,
     maxConcurrency: Int
 ) {
-    val jobs = ArrayList<Job>()
-    forEach {
+    val jobs = HashMap<Int, Job>()
+    forEach { id ->
         var waiting = true
         while (waiting) {
             synchronized(jobs) {
@@ -40,20 +43,21 @@ suspend fun <A, B> Collection<A>.parallelMapLimited(
             if (waiting) {
                 yield()
             } else {
-                val job = scope.async(Dispatchers.Default) { block(it) }
+                val job = scope.async(Dispatchers.Default) { block(id) }
                 job.invokeOnCompletion {
                     synchronized(jobs) {
-                        jobs.remove(job)
+                        jobs.remove(id)
                     }
-                    println("removed job. now has:${jobs.size}")
+//                    println("removed job ${id}. now has:${jobs.size}")
                 }
-                jobs.add(job)
-                println("started job. now has:${jobs.size}")
+                jobs[id] = job
+//                println("started job:${id}. now has:${jobs.size}")
             }
         }
     }
 }
 
+//Also broken??
 suspend fun <A, B> Collection<A>.parallelMapFromProduceLimited(
     scope: CoroutineScope = GlobalScope,
     block: suspend (A) -> B,
