@@ -46,7 +46,7 @@ class ParallelWorkload {
         @Test
         fun coroutines_singleThread() {
             runBlocking {
-                (0..COUNT).toList().forEach {
+                (0..COUNT).forEach {
                     Utils.timedWorkProcess(it, WAIT_TIME_MS)
                 }
             }
@@ -55,7 +55,7 @@ class ParallelWorkload {
         @Test
         fun defaultConcurrentProcesses_work() {
             runBlocking {
-                (0..COUNT).toList().parallelForEach {
+                (0..COUNT).parallelForEach {
                     Utils.heavyWorkProcess(it)
                 }
             }
@@ -64,7 +64,7 @@ class ParallelWorkload {
         @Test
         fun defaultConcurrentProcesses_timed() {
             runBlocking {
-                (0..COUNT).toList().parallelForEach {
+                (0..COUNT).parallelForEach {
                     Utils.timedWorkProcess(it, WAIT_TIME_MS)
                 }
             }
@@ -73,7 +73,7 @@ class ParallelWorkload {
         @Test
         fun defaultConcurrentProcesses_sleep() {
             runBlocking {
-                (0..COUNT).toList().parallelForEach {
+                (0..COUNT).parallelForEach {
                     Utils.sleepProcess(it, WAIT_TIME_MS)
                 }
             }
@@ -82,7 +82,7 @@ class ParallelWorkload {
         @Test
         fun defaultConcurrentProcesses_delay() {
             runBlocking {
-                (0..COUNT).toList().parallelForEach {
+                (0..COUNT).parallelForEach {
                     Utils.delayProcess(it, WAIT_TIME_MS)
                 }
             }
@@ -91,7 +91,7 @@ class ParallelWorkload {
         @Test
         fun limitedConcurrentProcesses_work() {
             runBlocking {
-                (0..COUNT).toList().parallelForEachLimited(block = {
+                (0..COUNT).parallelForEachLimited(block = {
                     Utils.heavyWorkProcess(it)
                 }, maxConcurrency = CONCURRENCY)
             }
@@ -100,7 +100,7 @@ class ParallelWorkload {
         @Test
         fun limitedConcurrentProcesses_timed() {
             runBlocking {
-                (0..COUNT).toList().parallelForEachLimited(block = {
+                (0..COUNT).parallelForEachLimited(block = {
                     Utils.timedWorkProcess(it, WAIT_TIME_MS)
                 }, maxConcurrency = CONCURRENCY)
             }
@@ -109,7 +109,7 @@ class ParallelWorkload {
         @Test
         fun limitedConcurrentProcesses_sleep() {
             runBlocking {
-                (0..COUNT).toList().parallelForEachLimited(block = {
+                (0..COUNT).parallelForEachLimited(block = {
                     Utils.sleepProcess(it, WAIT_TIME_MS)
                 }, maxConcurrency = CONCURRENCY)
             }
@@ -118,7 +118,7 @@ class ParallelWorkload {
         @Test
         fun limitedConcurrentProcesses_delay() {
             runBlocking {
-                (0..COUNT).toList().parallelForEachLimited(block = {
+                (0..COUNT).parallelForEachLimited(block = {
                     Utils.delayProcess(it, WAIT_TIME_MS)
                 }, maxConcurrency = CONCURRENCY)
             }
@@ -152,49 +152,37 @@ class ParallelWorkload {
 
         @Test
         fun limited_concurrentProcesses_work() {
-            concurrentProcess(function = { Utils.timedWorkProcess(it,
-                WAIT_TIME_MS
-            ) })
+            concurrentProcess(function = { Utils.timedWorkProcess(it, WAIT_TIME_MS) })
         }
 
         @Test
         fun limited_concurrentProcesses_sleep() {
-            concurrentProcess(function = { Utils.sleepProcess(it,
-                WAIT_TIME_MS
-            ) })
+            concurrentProcess(function = { Utils.sleepProcess(it, WAIT_TIME_MS) })
         }
 
         @Test
         fun limited_concurrentProcesses_delay() {
-            concurrentProcess(function = { Utils.delayProcess(it,
-                WAIT_TIME_MS
-            ) })
+            concurrentProcess(function = { Utils.delayProcess(it, WAIT_TIME_MS) })
         }
 
         @Test
         fun default_concurrentProcesses_work() {
-            concurrentProcess(function = { Utils.timedWorkProcess(it,
-                WAIT_TIME_MS
-            ) }, limit = 999)
+            concurrentProcess(function = { Utils.timedWorkProcess(it, WAIT_TIME_MS) }, limit = 999)
         }
 
         @Test
         fun default_concurrentProcesses_sleep() {
-            concurrentProcess(function = { Utils.sleepProcess(it,
-                WAIT_TIME_MS
-            ) }, limit = 999)
+            concurrentProcess(function = { Utils.sleepProcess(it, WAIT_TIME_MS) }, limit = 999)
         }
 
         @Test
         fun default_concurrentProcesses_delay() {
-            concurrentProcess(function = { Utils.delayProcess(it,
-                WAIT_TIME_MS
-            ) }, limit = 999)
+            concurrentProcess(function = { Utils.delayProcess(it, WAIT_TIME_MS) }, limit = 999)
         }
 
         //NOTES: If the inner shit needs to be in a new thread, put the subscribeOn() there. It rotates every time its called
         private fun concurrentProcess(function: suspend (Int) -> (Int), limit: Int = CONCURRENCY) {
-            val list: List<Int> = (0..COUNT).toList()
+            val list = (0..COUNT)
             val test = Observable.fromIterable(list)
                 .flatMap({ id ->
                     return@flatMap GlobalScope.rxSingle { function(id) }
@@ -204,7 +192,7 @@ class ParallelWorkload {
                 .test()
 
             test.awaitDone(5, TimeUnit.MINUTES)
-            test.assertValueCount(list.size)
+            test.assertValueCount(list.count())
         }
     }
 

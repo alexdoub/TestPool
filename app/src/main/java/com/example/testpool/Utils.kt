@@ -10,7 +10,7 @@ import kotlinx.coroutines.channels.produce
  * If your worker is in the main group then its just going to share the same scheduler
  * */
 
-suspend fun <A, B> Collection<A>.concurrentMap(
+suspend fun <A, B> Iterable<A>.concurrentMap(
     scope: CoroutineScope = GlobalScope,
     block: suspend (A) -> B
 ) = map {
@@ -18,47 +18,48 @@ suspend fun <A, B> Collection<A>.concurrentMap(
 }
 
 //working
-suspend fun <A, B> Collection<A>.parallelForEach(
+suspend fun Iterable<Int>.parallelForEach(
     scope: CoroutineScope = GlobalScope,
-    block: suspend (A) -> B
+    block: suspend (Int) -> Any
 ) = map {
     scope.async(Dispatchers.Default) { block(it) }
 }.forEach { it.await() }
 
-
 //This is BROKEN for high collection sizes! after 10k+ iterations it stops
-suspend fun Collection<Int>.parallelForEachLimited(
+suspend fun Iterable<Int>.parallelForEachLimited(
     scope: CoroutineScope = GlobalScope,
     block: suspend (Int) -> Any,
     maxConcurrency: Int
 ) {
-    val jobs = HashMap<Int, Job>()
-    forEach { id ->
-        var waiting = true
-        while (waiting) {
-            synchronized(jobs) {
-                waiting = jobs.size >= maxConcurrency
-            }
-
-            if (waiting) {
-                yield()
-            } else {
-                val job = scope.async(Dispatchers.Default) { block(id) }
-                job.invokeOnCompletion {
-                    synchronized(jobs) {
-                        jobs.remove(id)
-                    }
-//                    println("removed job ${id}. now has:${jobs.size}")
+    withContext(Dispatchers.Default) {
+        val jobs = HashMap<Int, Job>()
+        forEach { id ->
+            var waiting = true
+            while (waiting) {
+                synchronized(jobs) {
+                    waiting = jobs.size >= maxConcurrency
                 }
-                jobs[id] = job
+
+                if (waiting) {
+                    yield()
+                } else {
+                    val job = scope.async { block(id) }
+                    job.invokeOnCompletion {
+                        synchronized(jobs) {
+                            jobs.remove(id)
+                        }
+//                    println("removed job ${id}. now has:${jobs.size}")
+                    }
+                    jobs[id] = job
 //                println("started job:${id}. now has:${jobs.size}")
+                }
             }
         }
     }
 }
 
 //Also broken??
-suspend fun <A, B> Collection<A>.parallelMapFromProduceLimited(
+suspend fun <A, B> Iterable<A>.parallelMapFromProduceLimited(
     scope: CoroutineScope = GlobalScope,
     block: suspend (A) -> B,
     maxConcurrency: Int

@@ -64,7 +64,7 @@ class ParallelComputationTests {
     @Test
     fun coroutines_async_limited() {
         runBlocking {
-            (iterations).toList().parallelMapFromProduceLimited(this, {
+            (iterations).parallelMapFromProduceLimited(this, {
                 calculateHugeNumber(it); it
             }, concurrency)
                 .consumeEach { println("got ${it}") }
