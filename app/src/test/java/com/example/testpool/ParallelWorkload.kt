@@ -3,6 +3,7 @@ package com.example.testpool
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -90,11 +91,15 @@ class ParallelWorkload {
 
         @Test
         fun limitedConcurrentProcesses_work() {
+            val values = ArrayList<Int>()
             runBlocking {
                 (0..COUNT).parallelForEachLimited(block = {
-                    Utils.heavyWorkProcess(it)
+                    val v = Utils.heavyWorkProcess(it)
+                    values.add(v)
                 }, maxConcurrency = CONCURRENCY)
+                awaitAll<Int>()
             }
+            println("Test complete. Jobs finished: ${values.size}/$COUNT")
         }
 
         @Test
@@ -208,7 +213,7 @@ class ParallelWorkload {
             runBlocking {
 
                 //Immediately executes after this line
-                ids.parallelMapFromProduceLimited(scope = this, block = {
+                ids.parallelMapFromProduceLimitedOld(scope = this, block = {
                     fetchAndSyncBatch(it)
                 }, maxConcurrency = CONCURRENCY)
                     .consumeEach {

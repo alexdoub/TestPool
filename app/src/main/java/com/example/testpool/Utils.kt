@@ -31,7 +31,7 @@ suspend fun Iterable<Int>.parallelForEachLimited(
     block: suspend (Int) -> Any,
     maxConcurrency: Int
 ) {
-    withContext(Dispatchers.Default) {
+//    withContext(Dispatchers.Default) {
         val jobs = HashMap<Int, Job>()
         forEach { id ->
             var waiting = true
@@ -55,11 +55,46 @@ suspend fun Iterable<Int>.parallelForEachLimited(
                 }
             }
         }
-    }
+//    }
 }
 
-//Also broken??
-suspend fun <A, B> Iterable<A>.parallelMapFromProduceLimited(
+//duz work??
+suspend fun <A> Iterable<Int>.parallelMapFromProduceLimited(
+    scope: CoroutineScope = GlobalScope,
+    block: suspend (Int) -> A,
+    maxConcurrency: Int
+) = scope.produce {
+//    withContext(Dispatchers.Default) {
+        val jobs = HashMap<Int, Job>()
+        forEach { id ->
+            var waiting = true
+            while (waiting) {
+                synchronized(jobs) {
+                    waiting = jobs.size >= maxConcurrency
+                }
+                if (waiting) {
+                    yield()
+                } else {
+                    val job = scope.async {
+                        val rval = block(id)
+                        send(rval)
+                    }
+                    job.invokeOnCompletion {
+                        synchronized(jobs) {
+                            jobs.remove(id)
+                        }
+//                    println("removed job ${id}. now has:${jobs.size}")
+                    }
+                    jobs[id] = job
+//                println("started job:${id}. now has:${jobs.size}")
+                }
+            }
+        }
+//    }
+}
+
+////BROKEN FOR HIGH ITERATIVE VALUES
+suspend fun <A, B> Iterable<A>.parallelMapFromProduceLimitedOld(
     scope: CoroutineScope = GlobalScope,
     block: suspend (A) -> B,
     maxConcurrency: Int
@@ -81,5 +116,3 @@ suspend fun <A, B> Iterable<A>.parallelMapFromProduceLimited(
         jobs.add(job)
     }
 }
-
-
