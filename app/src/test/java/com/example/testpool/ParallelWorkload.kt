@@ -213,7 +213,7 @@ class ParallelWorkload {
             runBlocking {
 
                 //Immediately executes after this line
-                ids.parallelMapFromProduceLimitedOld(scope = this, block = {
+                ids.parallelMapFromProduceLimited(scope = this, block = {
                     fetchAndSyncBatch(it)
                 }, maxConcurrency = CONCURRENCY)
                     .consumeEach {

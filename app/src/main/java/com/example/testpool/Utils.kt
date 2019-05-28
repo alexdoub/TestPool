@@ -1,6 +1,5 @@
 package com.example.testpool
 
-import android.util.SparseArray
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.produce
 
@@ -17,7 +16,7 @@ suspend fun <A, B> Iterable<A>.concurrentMap(
     withContext(scope.coroutineContext) { block(it) }
 }
 
-//working
+//Fastest
 suspend fun Iterable<Int>.parallelForEach(
     scope: CoroutineScope = GlobalScope,
     block: suspend (Int) -> Any
@@ -25,76 +24,37 @@ suspend fun Iterable<Int>.parallelForEach(
     scope.async(Dispatchers.Default) { block(it) }
 }.forEach { it.await() }
 
-//This is BROKEN for high collection sizes! after 10k+ iterations it stops
+//Limiting concurrency ends up being counterproductive
 suspend fun Iterable<Int>.parallelForEachLimited(
     scope: CoroutineScope = GlobalScope,
     block: suspend (Int) -> Any,
     maxConcurrency: Int
 ) {
-//    withContext(Dispatchers.Default) {
-        val jobs = HashMap<Int, Job>()
-        forEach { id ->
-            var waiting = true
-            while (waiting) {
-                synchronized(jobs) {
-                    waiting = jobs.size >= maxConcurrency
-                }
+    val jobs = HashMap<Int, Job>()
+    forEach { id ->
+        var waiting = true
+        while (waiting) {
+            synchronized(jobs) {
+                waiting = jobs.size >= maxConcurrency
+            }
 
-                if (waiting) {
-                    yield()
-                } else {
-                    val job = scope.async { block(id) }
-                    job.invokeOnCompletion {
-                        synchronized(jobs) {
-                            jobs.remove(id)
-                        }
-//                    println("removed job ${id}. now has:${jobs.size}")
+            if (waiting) {
+                yield()
+            } else {
+                val job = scope.async { block(id) }
+                job.invokeOnCompletion {
+                    synchronized(jobs) {
+                        jobs.remove(id)
                     }
-                    jobs[id] = job
-//                println("started job:${id}. now has:${jobs.size}")
+
                 }
+                jobs[id] = job
             }
         }
-//    }
+    }
 }
 
-//duz work??
-suspend fun <A> Iterable<Int>.parallelMapFromProduceLimited(
-    scope: CoroutineScope = GlobalScope,
-    block: suspend (Int) -> A,
-    maxConcurrency: Int
-) = scope.produce {
-//    withContext(Dispatchers.Default) {
-        val jobs = HashMap<Int, Job>()
-        forEach { id ->
-            var waiting = true
-            while (waiting) {
-                synchronized(jobs) {
-                    waiting = jobs.size >= maxConcurrency
-                }
-                if (waiting) {
-                    yield()
-                } else {
-                    val job = scope.async {
-                        val rval = block(id)
-                        send(rval)
-                    }
-                    job.invokeOnCompletion {
-                        synchronized(jobs) {
-                            jobs.remove(id)
-                        }
-//                    println("removed job ${id}. now has:${jobs.size}")
-                    }
-                    jobs[id] = job
-//                println("started job:${id}. now has:${jobs.size}")
-                }
-            }
-        }
-//    }
-}
-
-////BROKEN FOR HIGH ITERATIVE VALUES
-suspend fun <A, B> Iterable<A>.parallelMapFromProduceLimitedOld(
+suspend fun <A, B> Iterable<A>.parallelMapFromProduceLimited(
     scope: CoroutineScope = GlobalScope,
     block: suspend (A) -> B,
     maxConcurrency: Int
@@ -114,5 +74,38 @@ suspend fun <A, B> Iterable<A>.parallelMapFromProduceLimitedOld(
         }
         job.invokeOnCompletion { jobs.remove(job) }
         jobs.add(job)
+    }
+}
+
+//synchronized not necessary?
+suspend fun <A> Iterable<Int>.parallelMapFromProduceLimitedSynchronized(
+    scope: CoroutineScope = GlobalScope,
+    block: suspend (Int) -> A,
+    maxConcurrency: Int
+) = scope.produce {
+
+    val jobs = HashMap<Int, Job>()
+    forEach { id ->
+        var waiting = true
+        while (waiting) {
+            synchronized(jobs) {
+                waiting = jobs.size >= maxConcurrency
+            }
+            if (waiting) {
+                yield()
+            } else {
+                val job = scope.async {
+                    val rval = block(id)
+                    send(rval)
+                }
+                job.invokeOnCompletion {
+                    synchronized(jobs) {
+                        jobs.remove(id)
+                    }
+                }
+                jobs[id] = job
+
+            }
+        }
     }
 }

@@ -5,7 +5,6 @@ import com.example.testpool.Utils.lightWorkProcessRx
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -14,7 +13,7 @@ import org.junit.Test
  */
 class ManyParallelLightWorkload {
 
-//    companion object {
+    companion object {
         val COUNT = 50000
         val CONCURRENCY = 4
 
@@ -59,12 +58,25 @@ class ManyParallelLightWorkload {
         }
 
         @Test
-        fun parallelFromProducer_limited() {
+        fun parallelMapFromProduce_limited() {
             runBlocking(Dispatchers.Default) {
                 (0..COUNT).parallelMapFromProduceLimited(scope = this, block = {
                     lightWorkProcess(it); it
                 }, maxConcurrency = CONCURRENCY)
-                    .consumeEach { println("got ${it}") }
+                    .consumeEach { }
+                println("Past block")
+            }
+            println("end of test")
+        }
+
+
+        @Test
+        fun parallelMapFromProduceLimitedSynchronized() {
+            runBlocking(Dispatchers.Default) {
+                (0..COUNT).parallelMapFromProduceLimitedSynchronized(scope = this, block = {
+                    lightWorkProcess(it); it
+                }, maxConcurrency = CONCURRENCY)
+                    .consumeEach { }
                 println("Past block")
             }
             println("end of test")
@@ -111,7 +123,7 @@ class ManyParallelLightWorkload {
                 }, CONCURRENCY)
                 .test().await()//.assertValueCount(COUNT + 1)
         }
-    }/**
+    }
 
     class MultiTest {
         val ITERATIONS = 5
@@ -124,6 +136,16 @@ class ManyParallelLightWorkload {
         @Test
         fun parallelForEach_limited_benchmark() {
             repeatBlock { ManyParallelLightWorkload.parallelForEach_limited() }
+        }
+
+        @Test
+        fun parallelMapFromProduce_limited_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.parallelMapFromProduce_limited() }
+        }
+
+        @Test
+        fun parallelMapFromProduceLimitedSynchronized_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.parallelMapFromProduceLimitedSynchronized() }
         }
 
         @Test   //60.6
@@ -156,4 +178,3 @@ class ManyParallelLightWorkload {
         }
     }
 }
-*/
