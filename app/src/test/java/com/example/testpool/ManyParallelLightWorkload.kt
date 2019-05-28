@@ -15,50 +15,50 @@ class ManyParallelLightWorkload {
 
     companion object {
         val COUNT = 50000
-        val CONCURRENCY = 4
+        val CONCURRENCY = 8 //@@Todo: set to device core count
 
         /* Single thread coroutines */
 
-//        @Test
-//        fun single_map() {
-//            runBlocking(Dispatchers.Default) {
-//                (0..COUNT).map {
-//                    lightWorkProcess(it)
-//                }
-//            }
-//        }
-//
-//        @Test     //Same as single thread, slow
-//        fun single_concurrentMap() {
-//            runBlocking(Dispatchers.Default) {
-//                (0..COUNT).concurrentMap {
-//                    lightWorkProcess(it)
-//                }
-//            }
-//        }
-
-        /* Multithread coroutines */
-
-        @Test   //fastest coroutines approach
-        fun parallelForEach() { //fastest coroutine
+        @Test
+        fun single_map() {
             runBlocking(Dispatchers.Default) {
-                (0..COUNT).parallelForEach {
+                (0..COUNT).map {
                     lightWorkProcess(it)
                 }
             }
         }
 
-        @Test   //slightly slower? dispatcher is better at managing parallelism
-        fun parallelForEach_limited() {
+        @Test     //Same as single thread, slow
+        fun single_concurrentMap() {
             runBlocking(Dispatchers.Default) {
-                (0..COUNT).parallelForEachLimited(block = { id: Int ->
+                (0..COUNT).concurrentMap {
+                    lightWorkProcess(it)
+                }
+            }
+        }
+
+        /* Multithread coroutines */
+
+        @Test   //fastest coroutines approach
+        fun cr_parallelForEach() { //fastest coroutine
+            runBlocking(Dispatchers.Default) {
+                (0..COUNT).parallelForEach(scope = this, block = {
+                    lightWorkProcess(it)
+                })
+            }
+        }
+
+        @Test   //slightly slower? dispatcher is better at managing parallelism
+        fun cr_parallelForEach_limited() {
+            runBlocking(Dispatchers.Default) {
+                (0..COUNT).parallelForEachLimited(scope = this, block = { id: Int ->
                     lightWorkProcess(id)
                 }, maxConcurrency = CONCURRENCY)
             }
         }
 
         @Test
-        fun parallelMapFromProduce_limited() {
+        fun cr_parallelMapFromProduce_limited() {
             runBlocking(Dispatchers.Default) {
                 (0..COUNT).parallelMapFromProduceLimited(scope = this, block = {
                     lightWorkProcess(it); it
@@ -70,7 +70,7 @@ class ManyParallelLightWorkload {
         }
 
         @Test
-        fun parallelMapFromProduceLimitedSynchronized() {
+        fun cr_parallelMapFromProduceLimitedSynchronized() {
             runBlocking(Dispatchers.Default) {
                 (0..COUNT).parallelMapFromProduceLimitedSynchronized(scope = this, block = {
                     lightWorkProcess(it); it
@@ -128,24 +128,24 @@ class ManyParallelLightWorkload {
         val ITERATIONS = 5
 
         @Test //Fastest coroutines
-        fun parallelForEach_benchmark() {
-            repeatBlock { ManyParallelLightWorkload.parallelForEach() }
+        fun cr_parallelForEach_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelForEach() }
         }
 
         @Test
-        fun parallelForEach_limited_benchmark() {
-            repeatBlock { ManyParallelLightWorkload.parallelForEach_limited() }
+        fun cr_parallelForEach_limited_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelForEach_limited() }
         }
 
-//        @Test
-//        fun parallelMapFromProduce_limited_benchmark() {
-//            repeatBlock { ManyParallelLightWorkload.parallelMapFromProduce_limited() }
-//        }
-//
-//        @Test
-//        fun parallelMapFromProduceLimitedSynchronized_benchmark() {
-//            repeatBlock { ManyParallelLightWorkload.parallelMapFromProduceLimitedSynchronized() }
-//        }
+        @Test
+        fun cr_parallelMapFromProduce_limited_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelMapFromProduce_limited() }
+        }
+
+        @Test
+        fun cr_parallelMapFromProduceLimitedSynchronized_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelMapFromProduceLimitedSynchronized() }
+        }
 
         @Test
         fun rx_computation_benchmark() {
