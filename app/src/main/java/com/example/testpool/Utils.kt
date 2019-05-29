@@ -38,7 +38,7 @@ suspend fun Iterable<Int>.parallelForEachLaunch(
 }.forEach { it.join() }
 
 //Limiting concurrency ends up being counterproductive
-suspend fun Iterable<Int>.parallelForEachLimited(
+suspend fun Iterable<Int>.parallelForEachLaunchLimited(
     scope: CoroutineScope = GlobalScope,
     block: suspend (Int) -> Any,
     maxConcurrency: Int
@@ -54,7 +54,7 @@ suspend fun Iterable<Int>.parallelForEachLimited(
             if (waiting) {
                 yield()
             } else {
-                val job = scope.async { block(id) }
+                val job = scope.launch { block(id) }
                 job.invokeOnCompletion {
                     synchronized(jobs) {
                         jobs.remove(id)
@@ -66,7 +66,7 @@ suspend fun Iterable<Int>.parallelForEachLimited(
     }
 }
 
-suspend fun <A, B> Iterable<A>.parallelProduceLimited(
+suspend fun <A, B> Iterable<A>.parallelProduceLaunchLimited(
     scope: CoroutineScope = GlobalScope,
     block: suspend (A) -> B,
     maxConcurrency: Int
@@ -77,7 +77,7 @@ suspend fun <A, B> Iterable<A>.parallelProduceLimited(
         while (jobs.size >= maxConcurrency) {
             yield()
         }
-        val job = scope.async {
+        val job = scope.launch {
             send(block(it))
         }
         job.invokeOnCompletion { jobs.remove(job) }
@@ -86,7 +86,7 @@ suspend fun <A, B> Iterable<A>.parallelProduceLimited(
 }
 
 //synchronized not necessary?
-suspend fun <A> Iterable<Int>.parallelProduceLimitedSynchronized(
+suspend fun <A> Iterable<Int>.parallelProduceLaunchSynchronizedLimited(
     scope: CoroutineScope = GlobalScope,
     block: suspend (Int) -> A,
     maxConcurrency: Int
@@ -102,7 +102,7 @@ suspend fun <A> Iterable<Int>.parallelProduceLimitedSynchronized(
             if (waiting) {
                 yield()
             } else {
-                val job = scope.async {
+                val job = scope.launch {
                     val rval = block(id)
                     send(rval)
                 }

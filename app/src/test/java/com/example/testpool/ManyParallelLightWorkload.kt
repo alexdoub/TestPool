@@ -7,9 +7,9 @@ import io.reactivex.schedulers.Schedulers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.runBlocking
+import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.Timeout
-import org.junit.Rule
 
 /**
  */
@@ -21,7 +21,7 @@ class ManyParallelLightWorkload {
 
         /* Single thread coroutines */
 
-        @Test
+        //@Test
         fun single_map() {
             runBlocking(Dispatchers.Default) {
                 (0..COUNT).map {
@@ -30,7 +30,7 @@ class ManyParallelLightWorkload {
             }
         }
 
-        @Test     //Same as single thread, slow
+        //@Test     //Same as single thread, slow
         fun single_concurrentMap() {
             runBlocking(Dispatchers.Default) {
                 (0..COUNT).concurrentMap {
@@ -41,7 +41,7 @@ class ManyParallelLightWorkload {
 
         /* Multithread coroutines */
 
-        @Test   //fastest coroutines approach
+        //@Test   //fastest coroutines approach
         fun cr_parallelForEachAsync() {
             runBlocking(Dispatchers.Default) {
                 (0..COUNT).parallelForEachAsync(scope = this, block = {
@@ -50,7 +50,7 @@ class ManyParallelLightWorkload {
             }
         }
 
-        @Test
+        //@Test
         fun cr_parallelMapAsync() {
             runBlocking(Dispatchers.Default) {
                 (0..COUNT).parallelMapAsync(scope = this, block = {
@@ -59,7 +59,7 @@ class ManyParallelLightWorkload {
             }
         }
 
-        @Test
+        //@Test
         fun cr_parallelForEachLaunch() {
             runBlocking(Dispatchers.Default) {
                 (0..COUNT).parallelForEachLaunch(scope = this, block = {
@@ -68,29 +68,29 @@ class ManyParallelLightWorkload {
             }
         }
 
-        @Test   //slightly slower? dispatcher is better at managing parallelism
-        fun cr_parallelForEach_limited() {
+        //@Test   //slightly slower? dispatcher is better at managing parallelism
+        fun cr_parallelForEachLaunch_limited() {
             runBlocking(Dispatchers.Default) {
-                (0..COUNT).parallelForEachLimited(scope = this, block = { id: Int ->
+                (0..COUNT).parallelForEachLaunchLimited(scope = this, block = { id: Int ->
                     lightWorkProcess(id)
                 }, maxConcurrency = CONCURRENCY)
             }
         }
 
-        @Test
-        fun cr_parallelProduce_limited() {
+        //@Test
+        fun cr_parallelProduceLaunch_limited() {
             runBlocking(Dispatchers.Default) {
-                (0..COUNT).parallelProduceLimited(scope = this, block = {
+                (0..COUNT).parallelProduceLaunchLimited(scope = this, block = {
                     lightWorkProcess(it); it
                 }, maxConcurrency = CONCURRENCY)
                     .consumeEach { }
             }
         }
 
-        @Test
-        fun cr_parallelProduceLimitedSynchronized() {
+        //@Test
+        fun cr_parallelProduceLaunchSynchronizedLimited() {
             runBlocking(Dispatchers.Default) {
-                (0..COUNT).parallelProduceLimitedSynchronized(scope = this, block = {
+                (0..COUNT).parallelProduceLaunchSynchronizedLimited(scope = this, block = {
                     lightWorkProcess(it); it
                 }, maxConcurrency = CONCURRENCY)
                     .consumeEach { }
@@ -99,7 +99,7 @@ class ManyParallelLightWorkload {
 
         /* RX */
 
-        @Test   //slightly slower than limited
+        //@Test   //slightly slower than limited
         fun rx_computation() {
             Observable.fromIterable((0..COUNT))
                 .flatMap({
@@ -109,7 +109,7 @@ class ManyParallelLightWorkload {
                 .test().await()//.assertValueCount(COUNT + 1)
         }
 
-        @Test   //Slowest Rx approach
+        //@Test   //Slowest Rx approach
         fun rx_newthread() {
             Observable.fromIterable((0..COUNT))
                 .flatMap({
@@ -119,7 +119,7 @@ class ManyParallelLightWorkload {
                 .test().await()//.assertValueCount(COUNT + 1)
         }
 
-        @Test   //Fastest Rx approach
+        //@Test   //Fastest Rx approach
         fun rx_computation_limited() {
             Observable.fromIterable((0..COUNT))
                 .flatMap({
@@ -129,7 +129,7 @@ class ManyParallelLightWorkload {
                 .test().await()//.assertValueCount(COUNT + 1)
         }
 
-        @Test   //Much faster than unlimited. Almost the same as computation unlimited
+        //@Test   //Much faster than unlimited. Almost the same as computation unlimited
         fun rx_newthread_limited() {
             Observable.fromIterable((0..COUNT))
                 .flatMap({
@@ -140,10 +140,11 @@ class ManyParallelLightWorkload {
         }
     }
 
-    class MultiTest {
+    class BenchmarkTest {
         val ITERATIONS = 5
 
-        @Rule @JvmField
+        @Rule
+        @JvmField
         val globalTimeout = Timeout.seconds(60 * 2)
 
         @Test //Fastest coroutines
@@ -157,8 +158,8 @@ class ManyParallelLightWorkload {
         }
 
         @Test
-        fun cr_parallelForEach_limited_benchmark() {
-            repeatBlock { ManyParallelLightWorkload.cr_parallelForEach_limited() }
+        fun cr_parallelForEachLaunch_limited_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelForEachLaunch_limited() }
         }
 
         @Test
@@ -166,14 +167,14 @@ class ManyParallelLightWorkload {
             repeatBlock { ManyParallelLightWorkload.cr_parallelMapAsync() }
         }
 
-        @Test
-        fun cr_parallelProduce_limited_benchmark() {
-            repeatBlock { ManyParallelLightWorkload.cr_parallelProduce_limited() }
+        @Test   //slow as fuck for some reason? the synchronized version is much faster
+        fun cr_parallelProduceLaunch_limited_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelProduceLaunch_limited() }
         }
 
         @Test
-        fun cr_parallelProduceLimitedSynchronized_benchmark() {
-            repeatBlock { ManyParallelLightWorkload.cr_parallelProduceLimitedSynchronized() }
+        fun cr_parallelProduceLaunchSynchronizedLimited_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelProduceLaunchSynchronizedLimited() }
         }
 
         @Test

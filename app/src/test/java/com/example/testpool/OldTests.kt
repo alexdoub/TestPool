@@ -63,7 +63,7 @@ class OldTests {
     fun coroutines_async_limited() {
         val values = ArrayList<Int>()
         runBlocking(Dispatchers.Default) {
-            (iterations).parallelProduceLimited(this, {
+            (iterations).parallelProduceLaunchLimited(this, {
                 calculateHugeNumber(it); it
             }, concurrency)
                 .consumeEach {
@@ -79,7 +79,7 @@ class OldTests {
     fun limitedConcurrentProcesses_work() {
         val values = ArrayList<Int>()
         runBlocking(Dispatchers.Default) {
-            (iterations).parallelForEachLimited(block = {
+            (iterations).parallelForEachLaunchLimited(block = {
                 calculateHugeNumber(it)
                 values.add(it)
                 println("got $it")

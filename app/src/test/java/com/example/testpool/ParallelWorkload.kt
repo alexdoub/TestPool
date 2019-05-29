@@ -93,7 +93,7 @@ class ParallelWorkload {
         fun limitedConcurrentProcesses_work() {
             val values = ArrayList<Int>()
             runBlocking {
-                (0..COUNT).parallelForEachLimited(block = {
+                (0..COUNT).parallelForEachLaunchLimited(block = {
                     val v = Utils.heavyWorkProcess(it)
                     values.add(v)
                 }, maxConcurrency = CONCURRENCY)
@@ -105,7 +105,7 @@ class ParallelWorkload {
         @Test
         fun limitedConcurrentProcesses_timed() {
             runBlocking {
-                (0..COUNT).parallelForEachLimited(block = {
+                (0..COUNT).parallelForEachLaunchLimited(block = {
                     Utils.timedWorkProcess(it, WAIT_TIME_MS)
                 }, maxConcurrency = CONCURRENCY)
             }
@@ -114,7 +114,7 @@ class ParallelWorkload {
         @Test
         fun limitedConcurrentProcesses_sleep() {
             runBlocking {
-                (0..COUNT).parallelForEachLimited(block = {
+                (0..COUNT).parallelForEachLaunchLimited(block = {
                     Utils.sleepProcess(it, WAIT_TIME_MS)
                 }, maxConcurrency = CONCURRENCY)
             }
@@ -123,7 +123,7 @@ class ParallelWorkload {
         @Test
         fun limitedConcurrentProcesses_delay() {
             runBlocking {
-                (0..COUNT).parallelForEachLimited(block = {
+                (0..COUNT).parallelForEachLaunchLimited(block = {
                     Utils.delayProcess(it, WAIT_TIME_MS)
                 }, maxConcurrency = CONCURRENCY)
             }
@@ -213,7 +213,7 @@ class ParallelWorkload {
             runBlocking {
 
                 //Immediately executes after this line
-                ids.parallelProduceLimited(scope = this, block = {
+                ids.parallelProduceLaunchLimited(scope = this, block = {
                     fetchAndSyncBatch(it)
                 }, maxConcurrency = CONCURRENCY)
                     .consumeEach {
