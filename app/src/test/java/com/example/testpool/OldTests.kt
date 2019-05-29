@@ -1,7 +1,5 @@
 package com.example.testpool
 
-import io.reactivex.Observable
-import io.reactivex.schedulers.Schedulers
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.consumeEach
 import org.junit.Test
@@ -65,7 +63,7 @@ class OldTests {
     fun coroutines_async_limited() {
         val values = ArrayList<Int>()
         runBlocking(Dispatchers.Default) {
-            (iterations).parallelMapFromProduceLimited(this, {
+            (iterations).parallelProduceLimited(this, {
                 calculateHugeNumber(it); it
             }, concurrency)
                 .consumeEach {
@@ -95,7 +93,7 @@ class OldTests {
     @Test
     fun coroutines_async() {
         runBlocking {
-            (iterations).toList().parallelForEach {
+            (iterations).toList().parallelForEachAsync {
                 calculateHugeNumber(it)
             }
         }
@@ -104,7 +102,7 @@ class OldTests {
     @Test
     fun coroutines_launch() {
         runBlocking {
-            (iterations).toList().parallelForEach {
+            (iterations).toList().parallelForEachAsync {
                 calculateHugeNumber(it)
             }
         }

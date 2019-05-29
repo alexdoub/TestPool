@@ -56,7 +56,7 @@ class ParallelWorkload {
         @Test
         fun defaultConcurrentProcesses_work() {
             runBlocking {
-                (0..COUNT).parallelForEach {
+                (0..COUNT).parallelForEachAsync {
                     Utils.heavyWorkProcess(it)
                 }
             }
@@ -65,7 +65,7 @@ class ParallelWorkload {
         @Test
         fun defaultConcurrentProcesses_timed() {
             runBlocking {
-                (0..COUNT).parallelForEach {
+                (0..COUNT).parallelForEachAsync {
                     Utils.timedWorkProcess(it, WAIT_TIME_MS)
                 }
             }
@@ -74,7 +74,7 @@ class ParallelWorkload {
         @Test
         fun defaultConcurrentProcesses_sleep() {
             runBlocking {
-                (0..COUNT).parallelForEach {
+                (0..COUNT).parallelForEachAsync {
                     Utils.sleepProcess(it, WAIT_TIME_MS)
                 }
             }
@@ -83,7 +83,7 @@ class ParallelWorkload {
         @Test
         fun defaultConcurrentProcesses_delay() {
             runBlocking {
-                (0..COUNT).parallelForEach {
+                (0..COUNT).parallelForEachAsync {
                     Utils.delayProcess(it, WAIT_TIME_MS)
                 }
             }
@@ -213,7 +213,7 @@ class ParallelWorkload {
             runBlocking {
 
                 //Immediately executes after this line
-                ids.parallelMapFromProduceLimited(scope = this, block = {
+                ids.parallelProduceLimited(scope = this, block = {
                     fetchAndSyncBatch(it)
                 }, maxConcurrency = CONCURRENCY)
                     .consumeEach {

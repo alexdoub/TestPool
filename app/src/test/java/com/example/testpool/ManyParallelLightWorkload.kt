@@ -44,9 +44,27 @@ class ManyParallelLightWorkload {
         /* Multithread coroutines */
 
         @Test   //fastest coroutines approach
-        fun cr_parallelForEach() { //fastest coroutine
+        fun cr_parallelForEachAsync() {
             runBlocking(Dispatchers.Default) {
-                (0..COUNT).parallelForEach(scope = this, block = {
+                (0..COUNT).parallelForEachAsync(scope = this, block = {
+                    lightWorkProcess(it)
+                })
+            }
+        }
+
+        @Test
+        fun cr_parallelMapAsync() {
+            runBlocking(Dispatchers.Default) {
+                (0..COUNT).parallelMapAsync(scope = this, block = {
+                    lightWorkProcess(it)
+                })
+            }
+        }
+
+        @Test
+        fun cr_parallelForEachLaunch() {
+            runBlocking(Dispatchers.Default) {
+                (0..COUNT).parallelForEachLaunch(scope = this, block = {
                     lightWorkProcess(it)
                 })
             }
@@ -62,27 +80,23 @@ class ManyParallelLightWorkload {
         }
 
         @Test
-        fun cr_parallelMapFromProduce_limited() {
+        fun cr_parallelProduce_limited() {
             runBlocking(Dispatchers.Default) {
-                (0..COUNT).parallelMapFromProduceLimited(scope = this, block = {
+                (0..COUNT).parallelProduceLimited(scope = this, block = {
                     lightWorkProcess(it); it
                 }, maxConcurrency = CONCURRENCY)
                     .consumeEach { }
-                println("Past block")
             }
-            println("end of test")
         }
 
         @Test
-        fun cr_parallelMapFromProduceLimitedSynchronized() {
+        fun cr_parallelProduceLimitedSynchronized() {
             runBlocking(Dispatchers.Default) {
-                (0..COUNT).parallelMapFromProduceLimitedSynchronized(scope = this, block = {
+                (0..COUNT).parallelProduceLimitedSynchronized(scope = this, block = {
                     lightWorkProcess(it); it
                 }, maxConcurrency = CONCURRENCY)
                     .consumeEach { }
-                println("Past block")
             }
-            println("end of test")
         }
 
         /* RX */
@@ -135,23 +149,33 @@ class ManyParallelLightWorkload {
         val globalTimeout = Timeout.seconds(60 * 2)
 
         @Test //Fastest coroutines
-        fun cr_parallelForEach_benchmark() {
-            repeatBlock { ManyParallelLightWorkload.cr_parallelForEach() }
+        fun cr_parallelForEachAsync_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelForEachAsync() }
         }
 
         @Test
-        fun cr_parallelForEach_limited_benchmark() {
+        fun cr_parallelForEachLaunch_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelForEachLaunch() }
+        }
+
+        @Test
+        fun cr_parallelForEach_benchmark() {
             repeatBlock { ManyParallelLightWorkload.cr_parallelForEach_limited() }
         }
 
         @Test
-        fun cr_parallelMapFromProduce_limited_benchmark() {
-            repeatBlock { ManyParallelLightWorkload.cr_parallelMapFromProduce_limited() }
+        fun cr_parallelMapAsync_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelMapAsync() }
         }
 
         @Test
-        fun cr_parallelMapFromProduceLimitedSynchronized_benchmark() {
-            repeatBlock { ManyParallelLightWorkload.cr_parallelMapFromProduceLimitedSynchronized() }
+        fun cr_parallelProduce_limited_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelProduce_limited() }
+        }
+
+        @Test
+        fun cr_parallelProduceLimitedSynchronized_benchmark() {
+            repeatBlock { ManyParallelLightWorkload.cr_parallelProduceLimitedSynchronized() }
         }
 
         @Test

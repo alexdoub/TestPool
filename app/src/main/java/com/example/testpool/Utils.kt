@@ -16,13 +16,26 @@ suspend fun <A, B> Iterable<A>.concurrentMap(
     withContext(scope.coroutineContext) { block(it) }
 }
 
-//Fastest
-suspend fun Iterable<Int>.parallelForEach(
+suspend fun Iterable<Int>.parallelForEachAsync(
     scope: CoroutineScope = GlobalScope,
     block: suspend (Int) -> Any
 ) = map {
-    scope.async(Dispatchers.Default) { block(it) }
+    scope.async(Dispatchers.Default) { block(it); }
 }.forEach { it.await() }
+
+suspend fun Iterable<Int>.parallelMapAsync(
+    scope: CoroutineScope = GlobalScope,
+    block: suspend (Int) -> Any
+) = map {
+    scope.async(Dispatchers.Default) { block(it); }
+}.map { it.await() }
+
+suspend fun Iterable<Int>.parallelForEachLaunch(
+    scope: CoroutineScope = GlobalScope,
+    block: suspend (Int) -> Any
+) = map {
+    scope.launch(Dispatchers.Default) { block(it); }
+}.forEach { it.join() }
 
 //Limiting concurrency ends up being counterproductive
 suspend fun Iterable<Int>.parallelForEachLimited(
@@ -46,7 +59,6 @@ suspend fun Iterable<Int>.parallelForEachLimited(
                     synchronized(jobs) {
                         jobs.remove(id)
                     }
-
                 }
                 jobs[id] = job
             }
@@ -54,7 +66,7 @@ suspend fun Iterable<Int>.parallelForEachLimited(
     }
 }
 
-suspend fun <A, B> Iterable<A>.parallelMapFromProduceLimited(
+suspend fun <A, B> Iterable<A>.parallelProduceLimited(
     scope: CoroutineScope = GlobalScope,
     block: suspend (A) -> B,
     maxConcurrency: Int
@@ -74,7 +86,7 @@ suspend fun <A, B> Iterable<A>.parallelMapFromProduceLimited(
 }
 
 //synchronized not necessary?
-suspend fun <A> Iterable<Int>.parallelMapFromProduceLimitedSynchronized(
+suspend fun <A> Iterable<Int>.parallelProduceLimitedSynchronized(
     scope: CoroutineScope = GlobalScope,
     block: suspend (Int) -> A,
     maxConcurrency: Int
