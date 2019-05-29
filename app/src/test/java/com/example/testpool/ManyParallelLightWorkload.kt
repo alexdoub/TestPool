@@ -11,8 +11,6 @@ import org.junit.Test
 import org.junit.rules.Timeout
 import org.junit.Rule
 
-
-
 /**
  */
 class ManyParallelLightWorkload {
@@ -159,7 +157,7 @@ class ManyParallelLightWorkload {
         }
 
         @Test
-        fun cr_parallelForEach_benchmark() {
+        fun cr_parallelForEach_limited_benchmark() {
             repeatBlock { ManyParallelLightWorkload.cr_parallelForEach_limited() }
         }
 
