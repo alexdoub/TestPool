@@ -167,12 +167,12 @@ class ManyParallelLightWorkload {
             repeatBlock { ManyParallelLightWorkload.cr_parallelMapAsync() }
         }
 
-        @Test
+        @Test   //whoops, broken. TODO: fix
         fun cr_parallelProduceLaunch_limited_benchmark() {
             repeatBlock { ManyParallelLightWorkload.cr_parallelProduceLaunch_limited() }
         }
 
-        @Test
+        @Test   //whoops, broken. TODO: fix
         fun cr_parallelProduceLaunchSynchronizedLimited_benchmark() {
             repeatBlock { ManyParallelLightWorkload.cr_parallelProduceLaunchSynchronizedLimited() }
         }
