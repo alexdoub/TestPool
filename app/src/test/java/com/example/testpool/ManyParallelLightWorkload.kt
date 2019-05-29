@@ -8,6 +8,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import org.junit.rules.Timeout
+import org.junit.Rule
+
+
 
 /**
  */
@@ -126,6 +130,9 @@ class ManyParallelLightWorkload {
 
     class MultiTest {
         val ITERATIONS = 5
+
+        @Rule @JvmField
+        val globalTimeout = Timeout.seconds(60 * 2)
 
         @Test //Fastest coroutines
         fun cr_parallelForEach_benchmark() {

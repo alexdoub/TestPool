@@ -65,10 +65,6 @@ suspend fun <A, B> Iterable<A>.parallelMapFromProduceLimited(
         while (jobs.size >= maxConcurrency) {
             yield()
         }
-
-        //Do NOT change scope here.
-        //This async needs to be in ProducerScope (this)
-        //Or else the parent scope wont know those jobs are running. (And resumes before they finished)
         val job = scope.async {
             send(block(it))
         }
@@ -104,7 +100,6 @@ suspend fun <A> Iterable<Int>.parallelMapFromProduceLimitedSynchronized(
                     }
                 }
                 jobs[id] = job
-
             }
         }
     }

@@ -10,7 +10,7 @@ import java.math.BigInteger
 
 class OldTests {
 
-    val iterations = 0..50000
+    val iterations = 0..5//00000
     val digitLength = 20//00
     val concurrency = 1
 //
@@ -70,7 +70,7 @@ class OldTests {
             }, concurrency)
                 .consumeEach {
                     values.add(it)
-//                    println("got ${it}")
+                    println("got ${it}")
                 }
             println("Past block. Jobs finished: ${values.size}/${iterations.endInclusive}")
         }
@@ -84,7 +84,7 @@ class OldTests {
             (iterations).parallelForEachLimited(block = {
                 calculateHugeNumber(it)
                 values.add(it)
-//                println("done with $it")
+                println("got $it")
             }, maxConcurrency = concurrency)
             awaitAll<Int>()
             println("Past block. Jobs finished: ${values.size}/${iterations.endInclusive}")
