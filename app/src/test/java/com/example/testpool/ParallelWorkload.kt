@@ -2,11 +2,8 @@ package com.example.testpool
 
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.rx2.rxObservable
 import kotlinx.coroutines.rx2.rxSingle
 import org.junit.Assert.assertEquals
@@ -218,8 +215,8 @@ class ParallelWorkload {
                 }, maxConcurrency = CONCURRENCY)
                     .consumeEach {
                         successfulBatches.add(it)
+                        loggy("Done adding batch ${it.syncedIds.firstOrNull()} to ${it.syncedIds.lastOrNull()}")
                     }
-
                 loggy("end of blocking. ids: ${ids.size} batch results: ${successfulBatches.size}")
             }
             loggy("before assert. ids: ${ids.size} batch results: ${successfulBatches.size}")

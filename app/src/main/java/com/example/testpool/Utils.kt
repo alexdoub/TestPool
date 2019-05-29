@@ -72,7 +72,7 @@ suspend fun <A, B> Iterable<A>.parallelProduceLaunchLimited(
     maxConcurrency: Int
 ) = scope.produce {
 
-    val jobs = ArrayList<Job>()
+    val jobs = HashMap<Int, Job>()
     forEach {
         while (jobs.size >= maxConcurrency) {
             yield()
@@ -80,15 +80,20 @@ suspend fun <A, B> Iterable<A>.parallelProduceLaunchLimited(
         val job = scope.launch {
             send(block(it))
         }
-        job.invokeOnCompletion { jobs.remove(job) }
-        jobs.add(job)
+        job.invokeOnCompletion { jobs.remove(job.hashCode()) }
+        jobs[job.hashCode()] = job
+    }
+//    awaitAll<Any>() //no effect
+//    joinAll() //no effect
+    while (jobs.isNotEmpty()) {
+        yield()
     }
 }
 
 //synchronized not necessary?
-suspend fun <A> Iterable<Int>.parallelProduceLaunchSynchronizedLimited(
+suspend fun <A, B> Iterable<A>.parallelProduceLaunchSynchronizedLimited(
     scope: CoroutineScope = GlobalScope,
-    block: suspend (Int) -> A,
+    block: suspend (A) -> B,
     maxConcurrency: Int
 ) = scope.produce {
 
@@ -108,11 +113,16 @@ suspend fun <A> Iterable<Int>.parallelProduceLaunchSynchronizedLimited(
                 }
                 job.invokeOnCompletion {
                     synchronized(jobs) {
-                        jobs.remove(id)
+                        jobs.remove(job.hashCode())
                     }
                 }
-                jobs[id] = job
+                jobs[job.hashCode()] = job
             }
         }
+    }
+//    awaitAll<Any>() //no effect
+//    joinAll() //no effect
+    while (jobs.isNotEmpty()) {
+        yield()
     }
 }

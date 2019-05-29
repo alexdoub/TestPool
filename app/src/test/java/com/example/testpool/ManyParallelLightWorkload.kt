@@ -167,7 +167,7 @@ class ManyParallelLightWorkload {
             repeatBlock { ManyParallelLightWorkload.cr_parallelMapAsync() }
         }
 
-        @Test   //slow as fuck for some reason? the synchronized version is much faster
+        @Test
         fun cr_parallelProduceLaunch_limited_benchmark() {
             repeatBlock { ManyParallelLightWorkload.cr_parallelProduceLaunch_limited() }
         }
